@@ -1,5 +1,10 @@
+use sqlx::FromRow;
+use uuid::Uuid;
+#[derive(FromRow)]
 pub struct User {
-    user_id: String,
+    pub user_id: Uuid,
+    pub username: String,
+    pub password_hash: String,
 }
 
 impl User {

@@ -20,7 +20,6 @@ pub fn app(db: PgPool) -> Router {
 }
 
 async fn root(Extension(db): Extension<PgPool>) -> Json<&'static str> {
-    println!("{db:#?}");
     Json("OK!")
 }
 
@@ -28,7 +27,10 @@ async fn not_found() -> impl IntoResponse {
     (StatusCode::NOT_FOUND, "Not found")
 }
 
-async fn authorize(Json(payload): Json<AuthPayload>) -> Result<Json<AuthBody>, AuthError> {
+async fn authorize(
+    Extension(db): Extension<PgPool>,
+    Json(payload): Json<AuthPayload>,
+) -> Result<Json<AuthBody>, AuthError> {
     if payload.client_id.is_empty() || payload.client_secret.is_empty() {
         return Err(AuthError::MissingCredentials);
     }

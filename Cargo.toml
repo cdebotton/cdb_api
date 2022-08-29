@@ -10,7 +10,7 @@ tokio = { version = "1.20.1", features = ["full"] }
 serde = { version = "1.0.144", features = ["derive"] }
 tracing-subscriber = { version = "0.3.15", features = ["env-filter"] }
 axum = { version = "0.5.15", features = ["headers"] }
-sqlx = { version = "0.6.1", features = ["runtime-tokio-rustls", "postgres", "chrono", "uuid"] }
+sqlx = { version = "0.6.1", features = ["runtime-tokio-rustls", "postgres", "chrono", "uuid", "offline"] }
 validator = { version = "0.16.0", features = ["derive"] }
 uuid = { version = "1.1.2", features = ["serde"] }
 tracing = "0.1.36"
