@@ -4,10 +4,11 @@ use axum::{
     Json,
 };
 use serde_json::json;
-use thiserror::Error;
 
-#[derive(Debug, Error)]
+#[derive(thiserror::Error, Debug)]
 pub enum AuthError {
+    #[error("There was a database error")]
+    DBError(#[from] sqlx::Error),
     #[error("Wrong credentials")]
     WrongCredentials,
     #[error("Missing credentials")]
@@ -20,9 +21,10 @@ pub enum AuthError {
 
 impl AuthError {
     pub fn status_code(&self) -> StatusCode {
-        match &self {
-            AuthError::MissingCredentials | AuthError::InvalidToken => StatusCode::BAD_REQUEST,
+        match self {
+            AuthError::DBError(_) => StatusCode::INTERNAL_SERVER_ERROR,
             AuthError::WrongCredentials => StatusCode::UNAUTHORIZED,
+            AuthError::MissingCredentials | AuthError::InvalidToken => StatusCode::BAD_REQUEST,
             AuthError::TokenCreation => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }

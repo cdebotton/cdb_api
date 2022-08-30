@@ -1,5 +1,6 @@
 use crate::{
     jwt::{AuthBody, AuthError, AuthPayload, Claims},
+    models::auth::Auth,
     KEYS,
 };
 use axum::{
@@ -28,21 +29,21 @@ async fn not_found() -> impl IntoResponse {
 }
 
 async fn authorize(
-    Extension(db): Extension<PgPool>,
+    Extension(pool): Extension<PgPool>,
     Json(payload): Json<AuthPayload>,
 ) -> Result<Json<AuthBody>, AuthError> {
     if payload.client_id.is_empty() || payload.client_secret.is_empty() {
         return Err(AuthError::MissingCredentials);
     }
 
-    if payload.client_id != "foo" || payload.client_secret != "bar" {
-        return Err(AuthError::WrongCredentials);
-    }
+    let (role, user_id) = Auth::new(&pool)
+        .authenticate(&payload.client_id, &payload.client_id)
+        .await?;
 
     let claims = Claims {
-        sub: "b@b.com".to_owned(),
-        company: "ACME".to_owned(),
-        exp: 2000000,
+        sub: user_id.to_owned(),
+        company: role.to_owned(),
+        exp: 1000 * 60 * 15,
     };
 
     let token = encode(&Header::default(), &claims, &KEYS.encoding)

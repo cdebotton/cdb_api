@@ -8,6 +8,7 @@ use axum::{
 };
 use jsonwebtoken::{decode, Validation};
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 use crate::KEYS;
 
@@ -15,7 +16,7 @@ use super::AuthError;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
-    pub sub: String,
+    pub sub: Uuid,
     pub company: String,
     pub exp: usize,
 }

@@ -1,16 +1,38 @@
+use sqlx::PgPool;
+use uuid::Uuid;
+
+use crate::jwt::AuthError;
+
 use super::user::User;
 
-#[derive(Default)]
-pub struct Auth {
+#[derive(Debug)]
+pub struct Auth<'a> {
+    pool: &'a PgPool,
     pub user: Option<User>,
 }
 
-impl Auth {
-    pub async fn authorize(&mut self, db: &sqlx::PgPool) -> Result<(), sqlx::Error> {
-        let rows = sqlx::query_as!(User, "SELECT * FROM \"user\"")
-            .fetch_all(db)
-            .await?;
+impl<'a> Auth<'a> {
+    pub fn new(pool: &'a PgPool) -> Self {
+        Auth { pool, user: None }
+    }
 
-        Ok(())
+    pub async fn authenticate(
+        &mut self,
+        email: &String,
+        password: &String,
+    ) -> Result<(String, Uuid), AuthError> {
+        let call = sqlx::query!(
+            // language=PostgreSQL
+            r#"SELECT role, user_id FROM app_public.authenticate($1, $2)"#,
+            &email,
+            &password
+        )
+        .fetch_one(self.pool)
+        .await?;
+
+        match (call.role, call.user_id) {
+            (Some(role), Some(user_id)) => Ok((role, user_id)),
+            _ => Err(AuthError::WrongCredentials),
+        }
     }
 }
