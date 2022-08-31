@@ -1,9 +1,16 @@
+#![warn(
+    clippy::pedantic,
+    clippy::nursery,
+    clippy::unwrap_used,
+    clippy::expect_used
+)]
+
 mod jwt;
 mod models;
 mod password;
 mod routes;
 
-use std::{env, net::SocketAddr};
+use std::{env, net::SocketAddr, process::exit};
 
 use axum::Server;
 use sqlx::postgres::PgPoolOptions;
@@ -13,7 +20,7 @@ use jwt::Keys;
 use once_cell::sync::Lazy;
 
 static KEYS: Lazy<Keys> = Lazy::new(|| {
-    let secret = env::var("JWT_SECRET").expect("JWT_SECRET must be set");
+    let secret = env::var("JWT_SECRET").unwrap_or_else(|_| panic!("JWT_SECRET not set"));
     Keys::new(secret.as_bytes())
 });
 
@@ -27,19 +34,32 @@ async fn main() {
         .init();
 
     let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
-    let database_url = dotenvy::var("DATABASE_URL").expect("DATABASE_URL must be set");
-    let db = PgPoolOptions::new()
+    let database_url = match dotenvy::var("DATABASE_URL") {
+        Ok(str) => str,
+        Err(err) => {
+            tracing::error!("Failed to read DATABASE_URL from env with error {err:#?}");
+            exit(2);
+        }
+    };
+
+    match PgPoolOptions::new()
         .max_connections(5)
         .connect(&database_url)
         .await
-        .expect("Failed to connect to the database");
+    {
+        Ok(db) => {
+            if let Err(err) = sqlx::migrate!().run(&db).await {
+                tracing::error!("Migrations failed with err {err:?}");
+            }
 
-    sqlx::migrate!().run(&db).await.expect("Migrations failed");
-
-    Server::bind(&addr)
-        .serve(routes::app(db).into_make_service())
-        .await
-        .unwrap();
-
-    tracing::debug!("Listening on {}", addr);
+            match Server::bind(&addr)
+                .serve(routes::app(db).into_make_service())
+                .await
+            {
+                Ok(_) => tracing::debug!("Listening on {}", addr),
+                Err(err) => tracing::error!("Unable to start server, {}", err),
+            }
+        }
+        Err(err) => panic!("Unable to connect to database, failed with error {:?}", err),
+    }
 }

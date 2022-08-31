@@ -20,12 +20,11 @@ pub enum AuthError {
 }
 
 impl AuthError {
-    pub fn status_code(&self) -> StatusCode {
+    pub const fn status_code(&self) -> StatusCode {
         match self {
-            AuthError::DBError(_) => StatusCode::INTERNAL_SERVER_ERROR,
-            AuthError::WrongCredentials => StatusCode::UNAUTHORIZED,
-            AuthError::MissingCredentials | AuthError::InvalidToken => StatusCode::BAD_REQUEST,
-            AuthError::TokenCreation => StatusCode::INTERNAL_SERVER_ERROR,
+            Self::DBError(_) | Self::TokenCreation => StatusCode::INTERNAL_SERVER_ERROR,
+            Self::WrongCredentials => StatusCode::UNAUTHORIZED,
+            Self::MissingCredentials | Self::InvalidToken => StatusCode::BAD_REQUEST,
         }
     }
 }

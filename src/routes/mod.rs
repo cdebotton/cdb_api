@@ -41,8 +41,8 @@ async fn authorize(
         .await?;
 
     let claims = Claims {
-        sub: user_id.to_owned(),
-        company: role.to_owned(),
+        sub: user_id,
+        company: role,
         exp: 1000 * 60 * 15,
     };
 

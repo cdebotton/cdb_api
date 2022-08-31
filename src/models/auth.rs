@@ -12,7 +12,7 @@ pub struct Auth<'a> {
 }
 
 impl<'a> Auth<'a> {
-    pub fn new(pool: &'a PgPool) -> Self {
+    pub const fn new(pool: &'a PgPool) -> Self {
         Auth { pool, user: None }
     }
 

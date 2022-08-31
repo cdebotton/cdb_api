@@ -1,0 +1,30 @@
+{
+  "db": "PostgreSQL",
+  "adeac34c0914505c9445396316f18cfc8cd0961744eb3ad674dc457853e6d11c": {
+    "describe": {
+      "columns": [
+        {
+          "name": "role",
+          "ordinal": 0,
+          "type_info": "Text"
+        },
+        {
+          "name": "user_id",
+          "ordinal": 1,
+          "type_info": "Uuid"
+        }
+      ],
+      "nullable": [
+        null,
+        null
+      ],
+      "parameters": {
+        "Left": [
+          "Text",
+          "Text"
+        ]
+      }
+    },
+    "query": "SELECT role, user_id FROM app_public.authenticate($1, $2)"
+  }
+}

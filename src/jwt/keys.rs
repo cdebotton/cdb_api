@@ -7,7 +7,7 @@ pub struct Keys {
 
 impl Keys {
     pub fn new(secret: &[u8]) -> Self {
-        Keys {
+        Self {
             encoding: EncodingKey::from_secret(secret),
             decoding: DecodingKey::from_secret(secret),
         }
