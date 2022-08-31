@@ -1,19 +1,40 @@
-use chrono::Utc;
-use sqlx::FromRow;
+use chrono::{DateTime, Utc};
+use sqlx::{FromRow, PgPool};
 use uuid::Uuid;
+
+#[derive(thiserror::Error, Debug)]
+enum UserError {
+    #[error("Not Found")]
+    NotFound,
+    #[error("Server error {0:#?}")]
+    SqlxError(#[from] sqlx::Error),
+}
+
 #[derive(FromRow, Default, Debug, Clone)]
 pub struct User {
-    pub user_id: Uuid,
+    pub id: Uuid,
     pub username: String,
-    pub password_hash: String,
-    pub created_at: chrono::DateTime<Utc>,
-    pub updated_at: Option<chrono::DateTime<Utc>>,
+    pub email: String,
+    pub first_name: Option<String>,
+    pub last_name: Option<String>,
+    pub last_login: Option<DateTime<Utc>>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: Option<DateTime<Utc>>,
 }
 
 impl User {
-    pub fn find() {}
+    async fn find_by_id(pool: &PgPool, id: Uuid) -> Result<Self, UserError> {
+        sqlx::query_as!(User, r#"select * from app_public."user" where id = $1"#, id)
+            .fetch_optional(pool)
+            .await?
+            .ok_or(UserError::NotFound)
+    }
+
     pub fn find_all() {}
+
     pub fn create() {}
+
     pub fn destroy() {}
+
     pub fn update() {}
 }

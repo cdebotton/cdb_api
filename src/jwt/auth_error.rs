@@ -8,7 +8,7 @@ use serde_json::json;
 #[derive(thiserror::Error, Debug)]
 pub enum AuthError {
     #[error("There was a database error")]
-    DBError(#[from] sqlx::Error),
+    DbError(#[from] sqlx::Error),
     #[error("Wrong credentials")]
     WrongCredentials,
     #[error("Missing credentials")]
@@ -22,7 +22,7 @@ pub enum AuthError {
 impl AuthError {
     pub const fn status_code(&self) -> StatusCode {
         match self {
-            Self::DBError(_) | Self::TokenCreation => StatusCode::INTERNAL_SERVER_ERROR,
+            Self::DbError(_) | Self::TokenCreation => StatusCode::INTERNAL_SERVER_ERROR,
             Self::WrongCredentials => StatusCode::UNAUTHORIZED,
             Self::MissingCredentials | Self::InvalidToken => StatusCode::BAD_REQUEST,
         }

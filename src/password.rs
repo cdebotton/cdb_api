@@ -35,10 +35,13 @@ pub async fn verify(password: String, hash: String) -> Result<bool> {
 #[cfg(test)]
 mod tests {
     use super::{hash, verify};
+    use eyre::Result;
 
     #[tokio::test]
-    async fn it_verifies_hashed_password() {
-        let hashed_password = hash("abc123".into()).await.unwrap();
-        assert!(verify("abc123".into(), hashed_password).await.unwrap());
+    async fn it_verifies_hashed_password() -> Result<()> {
+        let hashed_password = hash("abc123".into()).await?;
+        assert!(verify("abc123".into(), hashed_password).await?);
+
+        Ok(())
     }
 }
