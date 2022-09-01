@@ -1,30 +1,24 @@
-create schema app_public;
-create schema app_private;
+CREATE ROLE role_admin;
+CREATE ROLE role_public;
+CREATE SCHEMA private;
 
-create role "anonymous";
-create role "authenticated";
+GRANT USAGE ON SCHEMA public TO role_public, role_admin;
+GRANT USAGE ON SCHEMA private TO role_admin;
 
-grant "anonymous"
-to cdb_api;
+create extension "uuid-ossp" with schema public;
+create extension "pgcrypto" with schema public;
 
+revoke all on schema private from role_public;
 
-grant "authenticated"
-to cdb_api;
-
-alter default privileges
-revoke execute on functions
-from public;
-
-grant usage
-on schema app_public
-to "anonymous", "authenticated";
-
-create function app_private.set_updated_at() returns trigger as $$
+create function set_updated_at() returns trigger as $$
 begin
   new.updated_at := current_timestamp;
   return new;
 end;
 $$ language plpgsql;
 
-create extension "uuid-ossp";
-create extension "pgcrypto";
+-- revoke all privileges on all tables in schema private from role_public;
+
+-- alter default privileges revoke insert, update, delete from public;
+-- grant usage on schema public to role_public, role_admin;
+-- grant all on schema auth to "authenticated";

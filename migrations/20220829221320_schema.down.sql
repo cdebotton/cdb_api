@@ -1,18 +1,23 @@
-drop function app_private.set_updated_at();
+REVOKE USAGE ON SCHEMA public FROM role_public, role_admin;
+REVOKE USAGE ON SCHEMA private FROM role_admin;
 
-alter default privileges
-grant execute on functions
-to public;
+DROP SCHEMA private;
 
-revoke usage
-on schema app_public
-from "anonymous", "authenticated";
+DROP ROLE role_admin;
+DROP ROLE role_public;
 
-drop role "anonymous";
-drop role "authenticated";
+DROP EXTENSION "uuid-ossp";
+DROP EXTENSION "pgcrypto";
 
-drop schema app_public;
-drop schema app_private;
+DROP FUNCTION set_updated_at();
 
-drop extension "uuid-ossp";
-drop extension "pgcrypto";
+-- alter default privileges grant execute on functions to public;
+
+-- revoke usage on schema public from "anonymous", "authenticated";
+-- revoke all on schema auth from "authenticated";
+
+-- DROP ROLE "anonymous";
+-- drop role "authenticated";
+
+-- drop schema auth;
+

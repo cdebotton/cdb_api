@@ -1,3 +1,3 @@
-drop trigger set_timestamp on app_public."user";
+-- drop trigger set_timestamp on users;
 
-drop table app_public."user";
+-- drop table users;

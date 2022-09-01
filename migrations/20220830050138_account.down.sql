@@ -1,9 +1,11 @@
-revoke execute on function app_public.register_account(text, text, text)
-from "authenticated";
+-- drop table auth.accounts;
 
-drop function app_public.register_account(text, text, text);
-drop function app_public.authenticate(text, text);
+-- revoke execute on function app_public.register_account(text, text, text)
+-- from "authenticated";
 
-drop type app_public.jwt_token;
+-- drop function app_public.register_account(text, text, text);
+-- drop function app_public.authenticate(text, text);
 
-drop table app_private.account;
+-- drop type app_public.jwt_token;
+
+-- drop table app_private.account;
