@@ -1,3 +1,6 @@
+-- https://dba.stackexchange.com/questions/115972/how-do-you-revoke-create-table-from-a-user-on-postgresql-9-4
+-- https://www.tangramvision.com/blog/hands-on-with-postgresql-authorization-part-1-roles-and-grants#why-use-postgresql-authorization
+
 CREATE ROLE role_admin;
 CREATE ROLE role_public;
 CREATE SCHEMA private;
