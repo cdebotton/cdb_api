@@ -1,3 +1,5 @@
+pub mod utils;
+
 use crate::{
     jwt::{AuthBody, AuthError, AuthPayload, Claims},
     models::auth::Auth,
@@ -40,11 +42,7 @@ async fn authorize(
         .authenticate(&payload.client_id, &payload.client_secret)
         .await?;
 
-    let claims = Claims {
-        uid: user_id,
-        role: role.into(),
-        exp: 1000 * 60 * 15,
-    };
+    let claims = Claims::new(user_id, role.into());
 
     let token = encode(&Header::default(), &claims, &KEYS.encoding)
         .map_err(|_| AuthError::TokenCreation)?;
@@ -56,56 +54,14 @@ async fn authorize(
 mod tests {
     use std::borrow::BorrowMut;
 
-    use axum::{
-        body::{Body, BoxBody, HttpBody},
-        http::{header::CONTENT_TYPE, request, Request, StatusCode},
-        response::Response,
-    };
+    use axum::http::Request;
     use eyre::Result;
     use serde_json::json;
-    use sqlx::PgPool;
     use tower::ServiceExt;
 
-    use crate::routes::app;
+    use super::*;
 
-    trait RequestBuilderExt {
-        fn json(self, json: serde_json::Value) -> Request<Body>;
-        fn empty_body(self) -> Request<Body>;
-    }
-
-    impl RequestBuilderExt for request::Builder {
-        fn json(self, json: serde_json::Value) -> Request<Body> {
-            let body = Body::from(json.to_string());
-
-            self.header("Content-Type", "application/json")
-                .body(body)
-                .expect("failed to buld request")
-        }
-
-        fn empty_body(self) -> Request<Body> {
-            self.body(Body::empty()).expect("failed to build request")
-        }
-    }
-
-    #[track_caller]
-    async fn response_json(resp: &mut Response<BoxBody>) -> serde_json::Value {
-        assert_eq!(
-            resp.headers()
-                .get(CONTENT_TYPE)
-                .expect("expected Content-Type"),
-            "application/json"
-        );
-
-        let body = resp.body_mut();
-        let mut bytes = Vec::new();
-
-        while let Some(res) = body.data().await {
-            let chunk = res.expect("error reading response body");
-            bytes.extend_from_slice(&chunk[..]);
-        }
-
-        serde_json::from_slice(&bytes).expect("Failed to read response body as json")
-    }
+    use crate::routes::utils::test::{response_json, RequestBuilderExt};
 
     #[sqlx::test]
     async fn test_root(pool: PgPool) -> Result<()> {

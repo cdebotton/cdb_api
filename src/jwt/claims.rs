@@ -46,6 +46,16 @@ pub struct Claims {
     pub exp: usize,
 }
 
+impl Claims {
+    pub fn new(uid: Uuid, role: Role) -> Self {
+        Claims {
+            uid,
+            role,
+            exp: 1000 * 60 * 15,
+        }
+    }
+}
+
 #[async_trait]
 impl<B> FromRequest<B> for Claims
 where
