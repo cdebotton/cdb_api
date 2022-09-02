@@ -1,0 +1,8 @@
+BEGIN;
+
+DROP SCHEMA IF EXISTS app, app_private CASCADE;
+
+DROP EXTENSION "pgcrypto";
+DROP EXTENSION "uuid-ossp";
+
+COMMIT;
