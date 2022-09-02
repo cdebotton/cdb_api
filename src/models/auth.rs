@@ -23,7 +23,7 @@ impl<'a> Auth<'a> {
     ) -> Result<(String, Uuid), AuthError> {
         let call = sqlx::query!(
             // language=PostgreSQL
-            r#"SELECT role, user_id FROM app_public.authenticate($1, $2)"#,
+            r#"SELECT role, user_id FROM app.authenticate($1, $2)"#,
             &email,
             &password
         )

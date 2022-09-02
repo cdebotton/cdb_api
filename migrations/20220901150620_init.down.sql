@@ -1,6 +1,10 @@
 BEGIN;
 
+ALTER DEFAULT PRIVILEGES GRANT EXECUTE ON FUNCTIONS TO public;
+
 DROP SCHEMA IF EXISTS app, app_private CASCADE;
+
+-- DROP ROLE app_anonymous, app_user;
 
 DROP EXTENSION "pgcrypto";
 DROP EXTENSION "uuid-ossp";

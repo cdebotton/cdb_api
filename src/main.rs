@@ -7,12 +7,12 @@
 
 mod jwt;
 mod models;
-mod password;
 mod routes;
 
 use std::{env, net::SocketAddr, process::exit};
 
 use axum::Server;
+
 use sqlx::postgres::PgPoolOptions;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 
@@ -47,13 +47,13 @@ async fn main() {
         .connect(&database_url)
         .await
     {
-        Ok(db) => {
-            if let Err(err) = sqlx::migrate!().run(&db).await {
+        Ok(pool) => {
+            if let Err(err) = sqlx::migrate!().run(&pool).await {
                 tracing::error!("Migrations failed with err {err:?}");
             }
 
             match Server::bind(&addr)
-                .serve(routes::app(db).into_make_service())
+                .serve(routes::app(pool).into_make_service())
                 .await
             {
                 Ok(_) => tracing::debug!("Listening on {}", addr),

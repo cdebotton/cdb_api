@@ -15,9 +15,34 @@ use crate::KEYS;
 use super::AuthError;
 
 #[derive(Debug, Serialize, Deserialize)]
+pub enum Role {
+    Admin,
+    Anonymous,
+}
+
+impl From<String> for Role {
+    fn from(role: String) -> Self {
+        match role.as_str() {
+            "admin" => Self::Admin,
+            "anonymous" => Self::Anonymous,
+            _ => {
+                tracing::error!("Invalid role {role:?}");
+                Self::Anonymous
+            }
+        }
+    }
+}
+
+impl fmt::Display for Role {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self)
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
-    pub sub: Uuid,
-    pub company: String,
+    pub uid: Uuid,
+    pub role: Role,
     pub exp: usize,
 }
 
@@ -46,6 +71,6 @@ where
 
 impl Display for Claims {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Email: {}\nCompany: {}", self.sub, self.company)
+        write!(f, "uid: {}\nrole: {}", self.uid, self.role)
     }
 }
