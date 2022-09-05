@@ -4,10 +4,13 @@ use axum::{
     Json,
 };
 use serde_json::json;
+use validator::ValidationErrors;
 
 #[derive(thiserror::Error, Debug)]
 pub enum AuthError {
-    #[error("There was a database error")]
+    #[error("{0}")]
+    ValidationError(#[from] ValidationErrors),
+    #[error("There was a database error: {0}")]
     DbError(#[from] sqlx::Error),
     #[error("Wrong credentials")]
     WrongCredentials,
@@ -24,7 +27,9 @@ impl AuthError {
         match self {
             Self::DbError(_) | Self::TokenCreation => StatusCode::INTERNAL_SERVER_ERROR,
             Self::WrongCredentials => StatusCode::UNAUTHORIZED,
-            Self::MissingCredentials | Self::InvalidToken => StatusCode::BAD_REQUEST,
+            Self::MissingCredentials | Self::InvalidToken | Self::ValidationError(_) => {
+                StatusCode::BAD_REQUEST
+            }
         }
     }
 }

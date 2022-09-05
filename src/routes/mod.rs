@@ -7,7 +7,7 @@ use sqlx::PgPool;
 pub fn app(pool: PgPool) -> Router {
     Router::new()
         .route("/", get(root))
-        .merge(accounts::routes())
+        .nest("/accounts", accounts::routes())
         .fallback(get(not_found))
         .layer(Extension(pool))
 }

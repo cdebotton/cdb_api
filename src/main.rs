@@ -5,6 +5,7 @@
     clippy::expect_used
 )]
 
+mod error;
 mod jwt;
 mod models;
 mod routes;
@@ -14,6 +15,8 @@ use std::{env, net::SocketAddr, process::exit};
 use axum::Server;
 
 use sqlx::postgres::PgPoolOptions;
+use tower::ServiceBuilder;
+use tower_http::cors::CorsLayer;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 
 use jwt::Keys;
@@ -53,7 +56,11 @@ async fn main() {
             }
 
             match Server::bind(&addr)
-                .serve(routes::app(pool).into_make_service())
+                .serve(
+                    routes::app(pool)
+                        .layer(ServiceBuilder::new().layer(CorsLayer::permissive()))
+                        .into_make_service(),
+                )
                 .await
             {
                 Ok(_) => tracing::debug!("Listening on {}", addr),

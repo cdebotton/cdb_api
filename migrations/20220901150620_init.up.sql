@@ -49,16 +49,20 @@ FOR EACH ROW EXECUTE PROCEDURE app_private.set_updated_at();
 -- Create the accounts table with data that is private and should be inaccessible to unauthenticated users.
 
 CREATE TABLE app_private.accounts (
-  user_id           uuid PRIMARY KEY REFERENCES app.users(id) ON DELETE CASCADE NOT NULL,
-  email             TEXT UNIQUE NOT NULL,
-  last_login        TIMESTAMP WITH TIME ZONE,
-  hashed_password   TEXT NOT NULL
+  user_id               uuid PRIMARY KEY REFERENCES app.users(id) ON DELETE CASCADE NOT NULL,
+  email                 TEXT UNIQUE NOT NULL,
+  last_login            TIMESTAMP WITH TIME ZONE,
+  refresh_token         TEXT UNIQUE,
+  refresh_token_expires TIMESTAMP WITH TIME ZONE,
+  hashed_password       TEXT NOT NULL
 );
 
 
 COMMENT ON TABLE app_private.accounts IS 'A table containing sensitive account data.';
 COMMENT ON COLUMN app_private.accounts.user_id IS 'The primary key that references the id of the user it belongs to.';
 COMMENT ON COLUMN app_private.accounts.last_login IS 'The last time the account has been logged in.';
+COMMENT ON COLUMN app_private.accounts.refresh_token IS 'A randomly generated token to refresh to current JSON Web Token.';
+COMMENT ON COLUMN app_private.accounts.refresh_token_expires IS 'The date when the refresh token expires.';
 COMMENT ON COLUMN app_private.accounts.hashed_password IS 'The encrypted password.';
 
 -- Install pgcypto for hashing passwords
@@ -80,8 +84,8 @@ CREATE FUNCTION app.register_user(
     VALUES (first_name, last_name)
     RETURNING * INTO new_user;
 
-    INSERT INTO app_private.accounts (user_id, email, hashed_password)
-    VALUES (new_user.id, email, crypt(password, gen_salt('bf')));
+    INSERT INTO app_private.accounts (user_id, email, hashed_password, refresh_token, refresh_token_expires)
+    VALUES (new_user.id, email, crypt(password, gen_salt('bf')), uuid_generate_v4(), NOW() + INTERVAL '5 days');
 
     RETURN new_user;
   END;
@@ -93,7 +97,9 @@ COMMENT ON FUNCTION app.register_user(TEXT, TEXT, TEXT, TEXT) IS 'Register a new
 
 CREATE TYPE app.jwt_token as (
   role TEXT,
-  user_id uuid
+  user_id uuid,
+  refresh_token uuid,
+  refresh_token_expires TIMESTAMP WITH TIME ZONE
 );
 
 -- Create function to verify that a user is providing the correct credentials.
@@ -102,7 +108,7 @@ CREATE FUNCTION app.authenticate(
   email TEXT,
   password TEXT
 ) RETURNS app.jwt_token as $$
-  SELECT ('admin', user_id)::app.jwt_token
+  SELECT ('admin', user_id, refresh_token, refresh_token_expires)::app.jwt_token
   FROM app_private.accounts
   WHERE accounts.email = $1
   AND accounts.hashed_password = crypt($2, accounts.hashed_password);

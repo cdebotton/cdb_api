@@ -1,3 +1,4 @@
+use chrono::{DateTime, Utc};
 use sqlx::PgPool;
 use uuid::Uuid;
 
@@ -6,33 +7,56 @@ use crate::jwt::AuthError;
 use super::user::User;
 
 #[derive(Debug)]
-pub struct Auth<'a> {
-    pool: &'a PgPool,
+pub struct Auth {
     pub user: Option<User>,
 }
 
-impl<'a> Auth<'a> {
-    pub const fn new(pool: &'a PgPool) -> Self {
-        Auth { pool, user: None }
-    }
-
+impl Auth {
     pub async fn authenticate(
-        &mut self,
+        pool: &PgPool,
         email: &String,
         password: &String,
-    ) -> Result<(String, Uuid), AuthError> {
+    ) -> Result<(String, Uuid, Uuid, DateTime<Utc>), AuthError> {
         let call = sqlx::query!(
             // language=PostgreSQL
-            r#"SELECT role, user_id FROM app.authenticate($1, $2)"#,
+            r#"SELECT role, user_id, refresh_token, refresh_token_expires FROM app.authenticate($1, $2)"#,
             &email,
             &password
         )
-        .fetch_one(self.pool)
+        .fetch_one(pool)
         .await?;
 
-        match (call.role, call.user_id) {
-            (Some(role), Some(user_id)) => Ok((role, user_id)),
+        match (
+            call.role,
+            call.user_id,
+            call.refresh_token,
+            call.refresh_token_expires,
+        ) {
+            (Some(role), Some(user_id), Some(refresh_token), Some(refresh_token_expires)) => {
+                Ok((role, user_id, refresh_token, refresh_token_expires))
+            }
             _ => Err(AuthError::WrongCredentials),
         }
+    }
+
+    pub async fn register(
+        pool: &PgPool,
+        first_name: Option<String>,
+        last_name: Option<String>,
+        email: String,
+        password: String,
+    ) -> Result<User, AuthError> {
+        let user = sqlx::query_as::<_, User>(
+            // language=PostgresQL
+            r#"SELECT * FROM app.register_user($1, $2, $3, $4);"#,
+        )
+        .bind(first_name)
+        .bind(last_name)
+        .bind(email)
+        .bind(password)
+        .fetch_one(pool)
+        .await?;
+
+        Ok(user)
     }
 }

@@ -1,4 +1,7 @@
-use std::fmt::{self, Display};
+use std::{
+    fmt::{self, Display},
+    ops::Add,
+};
 
 use axum::{
     async_trait,
@@ -6,6 +9,7 @@ use axum::{
     headers::{authorization::Bearer, Authorization},
     TypedHeader,
 };
+use chrono::{Duration, Utc};
 use jsonwebtoken::{decode, Validation};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -41,18 +45,16 @@ impl fmt::Display for Role {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
-    pub uid: Uuid,
+    pub sub: Uuid,
     pub role: Role,
-    pub exp: usize,
+    pub exp: i64,
 }
 
 impl Claims {
-    pub fn new(uid: Uuid, role: Role) -> Self {
-        Claims {
-            uid,
-            role,
-            exp: 1000 * 60 * 15,
-        }
+    pub fn new(sub: Uuid, role: Role) -> Self {
+        let exp = Utc::now().add(Duration::minutes(15)).timestamp_millis();
+
+        Claims { sub, role, exp }
     }
 }
 
@@ -81,6 +83,10 @@ where
 
 impl Display for Claims {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "uid: {}\nrole: {}", self.uid, self.role)
+        write!(
+            f,
+            "sub: {}\nrole: {}\nexp:{}",
+            self.sub, self.role, self.exp
+        )
     }
 }

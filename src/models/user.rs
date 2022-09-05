@@ -1,4 +1,8 @@
-use chrono::{DateTime, Utc};
+use chrono::{
+    serde::{ts_milliseconds, ts_milliseconds_option},
+    DateTime, Utc,
+};
+use serde::Serialize;
 use sqlx::{FromRow, PgPool};
 use uuid::Uuid;
 
@@ -10,12 +14,14 @@ enum UserError {
     SqlxError(#[from] sqlx::Error),
 }
 
-#[derive(FromRow, Default, Debug, Clone)]
+#[derive(FromRow, Default, Debug, Clone, Serialize)]
 pub struct User {
     pub id: Uuid,
     pub first_name: Option<String>,
     pub last_name: Option<String>,
+    #[serde(with = "ts_milliseconds")]
     pub created_at: DateTime<Utc>,
+    #[serde(with = "ts_milliseconds_option")]
     pub updated_at: Option<DateTime<Utc>>,
 }
 
