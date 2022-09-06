@@ -10,13 +10,25 @@ use axum::{
     TypedHeader,
 };
 use chrono::{Duration, Utc};
-use jsonwebtoken::{decode, Validation};
+use jsonwebtoken::{decode, DecodingKey, EncodingKey, Validation};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::KEYS;
+use crate::{error::Error, KEYS};
 
-use super::AuthError;
+pub struct Keys {
+    pub encoding: EncodingKey,
+    pub decoding: DecodingKey,
+}
+
+impl Keys {
+    pub fn new(secret: &[u8]) -> Self {
+        Self {
+            encoding: EncodingKey::from_secret(secret),
+            decoding: DecodingKey::from_secret(secret),
+        }
+    }
+}
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum Role {
@@ -63,7 +75,7 @@ impl<B> FromRequest<B> for Claims
 where
     B: Send + Sync,
 {
-    type Rejection = AuthError;
+    type Rejection = Error;
 
     async fn from_request(req: &'_ mut RequestParts<B>) -> Result<Self, Self::Rejection>
     where
@@ -72,10 +84,10 @@ where
         let TypedHeader(Authorization(bearer)) =
             TypedHeader::<Authorization<Bearer>>::from_request(req)
                 .await
-                .map_err(|_| AuthError::InvalidToken)?;
+                .map_err(|_| Error::InvalidToken)?;
 
         let token_data = decode(bearer.token(), &KEYS.decoding, &Validation::default())
-            .map_err(|_| AuthError::InvalidToken)?;
+            .map_err(|_| Error::InvalidToken)?;
 
         Ok(token_data.claims)
     }

@@ -1,5 +1,4 @@
 mod accounts;
-pub mod utils;
 
 use axum::{http::StatusCode, response::IntoResponse, routing::get, Extension, Json, Router};
 use sqlx::PgPool;
@@ -30,7 +29,7 @@ mod tests {
 
     use super::*;
 
-    use crate::routes::utils::test::RequestBuilderExt;
+    use crate::utils::test::RequestBuilderExt;
 
     #[sqlx::test]
     async fn test_root(pool: PgPool) -> Result<()> {

@@ -1,4 +1,3 @@
-#[cfg(test)]
 pub mod test {
     use axum::{
         body::{Body, BoxBody, HttpBody},

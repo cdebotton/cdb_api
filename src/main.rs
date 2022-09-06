@@ -5,27 +5,14 @@
     clippy::expect_used
 )]
 
-mod error;
-mod jwt;
-mod models;
-mod routes;
-
 use std::{env, net::SocketAddr, process::exit};
 
 use axum::Server;
-
+use cdb_api::routes;
 use sqlx::postgres::PgPoolOptions;
 use tower::ServiceBuilder;
 use tower_http::cors::CorsLayer;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
-
-use jwt::Keys;
-use once_cell::sync::Lazy;
-
-static KEYS: Lazy<Keys> = Lazy::new(|| {
-    let secret = env::var("JWT_SECRET").unwrap_or_else(|_| panic!("JWT_SECRET not set"));
-    Keys::new(secret.as_bytes())
-});
 
 #[tokio::main]
 async fn main() {

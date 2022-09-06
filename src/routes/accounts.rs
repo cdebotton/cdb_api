@@ -1,8 +1,3 @@
-use crate::{
-    jwt::{AuthError, Claims},
-    models::{auth::Auth, user::User},
-    KEYS,
-};
 use axum::{routing::post, Extension, Json, Router};
 use chrono::{DateTime, Utc};
 use jsonwebtoken::{encode, Algorithm, Header};
@@ -10,6 +5,8 @@ use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use uuid::Uuid;
 use validator::Validate;
+
+use crate::{error::Error, jwt::Claims, models::user::User, AuthService, KEYS};
 
 pub fn routes() -> Router {
     Router::new()
@@ -54,18 +51,16 @@ impl AuthBody {
 async fn authorize(
     Extension(pool): Extension<PgPool>,
     Json(payload): Json<AuthPayload>,
-) -> Result<Json<AuthBody>, AuthError> {
-    payload
-        .validate()
-        .map_err(|_| AuthError::MissingCredentials)?;
+) -> Result<Json<AuthBody>, Error> {
+    payload.validate().map_err(|_| Error::MissingCredentials)?;
 
     let (role, user_id, refresh_token, refresh_token_expires) =
-        Auth::authenticate(&pool, &payload.client_id, &payload.client_secret).await?;
+        AuthService::authenticate(&pool, &payload.client_id, &payload.client_secret).await?;
 
     let claims = Claims::new(user_id, role.into());
 
     let header = Header::new(Algorithm::HS512);
-    let token = encode(&header, &claims, &KEYS.encoding).map_err(|_| AuthError::TokenCreation)?;
+    let token = encode(&header, &claims, &KEYS.encoding).map_err(|_| Error::TokenCreation)?;
 
     Ok(Json(AuthBody::new(
         token,
@@ -91,10 +86,10 @@ pub struct RegisterPayload {
 async fn register(
     Extension(pool): Extension<PgPool>,
     Json(request): Json<RegisterPayload>,
-) -> Result<Json<User>, AuthError> {
+) -> Result<Json<User>, Error> {
     request.validate()?;
 
-    let user = Auth::register(
+    let user = AuthService::register(
         &pool,
         request.first_name,
         request.last_name,
@@ -104,53 +99,4 @@ async fn register(
     .await?;
 
     Ok(Json(user))
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::routes::utils::test::{response_json, RequestBuilderExt};
-    use axum::http::Request;
-    use eyre::Result;
-    use serde_json::json;
-    use std::borrow::BorrowMut;
-    use tower::ServiceExt;
-
-    #[sqlx::test(fixtures("users"))]
-    async fn test_authorize(pool: PgPool) -> Result<()> {
-        let mut app = Router::new().merge(routes()).layer(Extension(pool));
-
-        let request = Request::post("/authorize").json(json! {{
-            "client_id": "sleepy.g@yahoo.com",
-            "client_secret": "test"
-        }});
-
-        let mut res = app.borrow_mut().oneshot(request).await?;
-        let json = response_json(&mut res).await;
-
-        assert_eq!(json["token_type"], "Bearer".to_string());
-
-        Ok(())
-    }
-
-    #[sqlx::test]
-    async fn test_register(pool: PgPool) -> Result<()> {
-        let mut app = Router::new().merge(routes()).layer(Extension(pool));
-
-        let request = Request::post("/register").json(json! {{
-            "first_name": "Sleepy",
-            "last_name": "Gary",
-            "email": "sleepy.g@yahoo.com",
-            "password": "thisIsMyPassword"
-        }});
-
-        let mut res = app.borrow_mut().oneshot(request).await?;
-        let json = response_json(&mut res).await;
-        println!("{json}");
-
-        assert_eq!(json["first_name"], "Sleepy".to_string());
-        assert_eq!(json["last_name"], "Gary".to_string());
-
-        Ok(())
-    }
 }
