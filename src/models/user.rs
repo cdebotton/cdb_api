@@ -26,14 +26,18 @@ pub struct User {
 }
 
 impl User {
-    async fn find_by_id(pool: &PgPool, id: Uuid) -> Result<Self, UserError> {
+    pub async fn find_by_id(pool: &PgPool, id: Uuid) -> Result<Self, UserError> {
         sqlx::query_as!(User, r#"select * from app.users where id = $1"#, id)
             .fetch_optional(pool)
             .await?
             .ok_or(UserError::NotFound)
     }
 
-    pub fn find_all() {}
+    pub async fn find_all(pool: &PgPool) -> Result<Vec<Self>, sqlx::Error> {
+        Ok(sqlx::query_as!(User, r#"SELECT * FROM app.users"#)
+            .fetch_all(pool)
+            .await?)
+    }
 
     pub fn create() {}
 

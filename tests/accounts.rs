@@ -40,7 +40,6 @@ async fn test_register(pool: PgPool) -> Result<()> {
 
     let mut res = app.borrow_mut().oneshot(request).await?;
     let json = response_json(&mut res).await;
-    println!("{json}");
 
     assert_eq!(json["first_name"], "Sleepy".to_string());
     assert_eq!(json["last_name"], "Gary".to_string());
