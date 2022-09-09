@@ -9,12 +9,14 @@ pub struct AuthService {
     pub user: Option<User>,
 }
 
+type Token = (String, Uuid, Uuid, DateTime<Utc>);
+
 impl AuthService {
     pub async fn authenticate(
         pool: &PgPool,
         email: &String,
         password: &String,
-    ) -> Result<(String, Uuid, Uuid, DateTime<Utc>), Error> {
+    ) -> Result<Token, Error> {
         let call = sqlx::query!(
             // language=PostgreSQL
             r#"SELECT role, user_id, refresh_token, refresh_token_expires FROM app.authenticate($1, $2)"#,
@@ -29,6 +31,27 @@ impl AuthService {
             call.user_id,
             call.refresh_token,
             call.refresh_token_expires,
+        ) {
+            (Some(role), Some(user_id), Some(refresh_token), Some(refresh_token_expires)) => {
+                Ok((role, user_id, refresh_token, refresh_token_expires))
+            }
+            _ => Err(Error::WrongCredentials),
+        }
+    }
+
+    pub async fn revalidate(pool: &PgPool, token: uuid::Uuid) -> Result<Token, Error> {
+        let result = sqlx::query!(
+            r#"SELECT role, user_id, refresh_token, refresh_token_expires FROM app.revalidate($1)"#,
+            token
+        )
+        .fetch_one(pool)
+        .await?;
+
+        match (
+            result.role,
+            result.user_id,
+            result.refresh_token,
+            result.refresh_token_expires,
         ) {
             (Some(role), Some(user_id), Some(refresh_token), Some(refresh_token_expires)) => {
                 Ok((role, user_id, refresh_token, refresh_token_expires))

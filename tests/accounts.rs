@@ -46,3 +46,22 @@ async fn test_register(pool: PgPool) -> Result<()> {
 
     Ok(())
 }
+
+#[sqlx::test(fixtures("revalidate"))]
+async fn test_revalidate(pool: PgPool) -> Result<()> {
+    let mut app = app(pool.clone());
+
+    let token = sqlx::query!(
+        r#"SELECT refresh_token FROM app_private.accounts WHERE email = 'not.the.clams@gmail.com';"#
+    )
+    .fetch_one(&pool)
+    .await?;
+
+    let token = token.refresh_token.unwrap();
+
+    let request = Request::post("/accounts/revalidate").json(json! {token.to_string()});
+    let mut response = app.borrow_mut().oneshot(request).await?;
+    let json = response_json(&mut response).await;
+
+    Ok(())
+}

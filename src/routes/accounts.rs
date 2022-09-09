@@ -12,6 +12,7 @@ pub fn routes() -> Router {
     Router::new()
         .route("/authorize", post(authorize))
         .route("/register", post(register))
+        .route("/revalidate", post(revalidate))
 }
 
 #[derive(Debug, Deserialize, Validate)]
@@ -99,4 +100,30 @@ async fn register(
     .await?;
 
     Ok(Json(user))
+}
+
+#[derive(Debug, Deserialize, Validate)]
+struct RevalidatePayload {
+    refresh_token: uuid::Uuid,
+}
+
+async fn revalidate(
+    Extension(pool): Extension<PgPool>,
+    Json(body): Json<RevalidatePayload>,
+) -> Result<Json<AuthBody>, Error> {
+    println!("{body:#?}!!!");
+    let (role, user_id, refresh_token, refresh_token_expires) =
+        AuthService::revalidate(&pool, body.refresh_token).await?;
+
+    let claims = Claims::new(user_id, role.into());
+
+    let header = Header::new(Algorithm::HS512);
+    let token = encode(&header, &claims, &KEYS.encoding).map_err(|_| Error::TokenCreation)?;
+
+    Ok(Json(AuthBody::new(
+        token,
+        claims.exp,
+        refresh_token,
+        refresh_token_expires,
+    )))
 }

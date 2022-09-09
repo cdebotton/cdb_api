@@ -52,7 +52,7 @@ CREATE TABLE app_private.accounts (
   user_id               uuid PRIMARY KEY REFERENCES app.users(id) ON DELETE CASCADE NOT NULL,
   email                 TEXT UNIQUE NOT NULL,
   last_login            TIMESTAMP WITH TIME ZONE,
-  refresh_token         TEXT UNIQUE,
+  refresh_token         uuid UNIQUE,
   refresh_token_expires TIMESTAMP WITH TIME ZONE,
   hashed_password       TEXT NOT NULL
 );
@@ -84,8 +84,8 @@ CREATE FUNCTION app.register_user(
     VALUES (first_name, last_name)
     RETURNING * INTO new_user;
 
-    INSERT INTO app_private.accounts (user_id, email, hashed_password, refresh_token, refresh_token_expires)
-    VALUES (new_user.id, email, crypt(password, gen_salt('bf')), uuid_generate_v4(), NOW() + INTERVAL '5 days');
+    INSERT INTO app_private.accounts (user_id, email, hashed_password)
+    VALUES (new_user.id, email, crypt(password, gen_salt('bf')));
 
     RETURN new_user;
   END;
@@ -105,14 +105,24 @@ CREATE TYPE app.jwt_token as (
 -- Create function to verify that a user is providing the correct credentials.
 
 CREATE FUNCTION app.authenticate(
-  email TEXT,
-  password TEXT
+  input_email TEXT,
+  input_password TEXT
 ) RETURNS app.jwt_token as $$
-  SELECT ('admin', user_id, refresh_token, refresh_token_expires)::app.jwt_token
-  FROM app_private.accounts
-  WHERE accounts.email = $1
-  AND accounts.hashed_password = crypt($2, accounts.hashed_password);
-$$ LANGUAGE sql STRICT SECURITY DEFINER;
+  DECLARE
+    new_jwt app.jwt_token;
+  BEGIN
+    UPDATE app_private.accounts
+    SET
+      refresh_token = uuid_generate_v4(),
+      refresh_token_expires = NOW() + INTERVAL '5 days'
+    WHERE app_private.accounts.email = input_email
+    AND app_private.accounts.hashed_password = crypt(input_password, accounts.hashed_password)
+    RETURNING 'admin', user_id, refresh_token, refresh_token_expires
+    INTO new_jwt;
+
+    RETURN new_jwt;
+  END;
+$$ LANGUAGE plpgsql STRICT SECURITY DEFINER;
 
 COMMENT ON FUNCTION app.authenticate(TEXT, TEXT) IS 'Create a JWT token to identify a user and provide permissions.';
 

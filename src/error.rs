@@ -16,6 +16,8 @@ pub enum Error {
     WrongCredentials,
     #[error("Missing credentials")]
     MissingCredentials,
+    #[error("Invalid refresh token")]
+    InvalidRefreshToken,
     #[error("Unable to create token")]
     TokenCreation,
     #[error("Invalid token")]
@@ -27,9 +29,10 @@ impl Error {
         match self {
             Self::DbError(_) | Self::TokenCreation => StatusCode::INTERNAL_SERVER_ERROR,
             Self::WrongCredentials => StatusCode::UNAUTHORIZED,
-            Self::MissingCredentials | Self::InvalidToken | Self::ValidationError(_) => {
-                StatusCode::BAD_REQUEST
-            }
+            Self::MissingCredentials
+            | Self::InvalidToken
+            | Self::InvalidRefreshToken
+            | Self::ValidationError(_) => StatusCode::BAD_REQUEST,
         }
     }
 }
