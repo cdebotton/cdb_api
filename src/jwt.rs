@@ -36,6 +36,17 @@ pub enum Role {
     Anonymous,
 }
 
+impl fmt::Display for Role {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let role = match self {
+            Self::Admin => "(admin)",
+            Self::Anonymous => "(anonymous)",
+        };
+
+        write!(f, "{}", role)
+    }
+}
+
 impl From<String> for Role {
     fn from(role: String) -> Self {
         match role.as_str() {
@@ -46,12 +57,6 @@ impl From<String> for Role {
                 Self::Anonymous
             }
         }
-    }
-}
-
-impl fmt::Display for Role {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self)
     }
 }
 

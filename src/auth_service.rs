@@ -41,7 +41,7 @@ impl AuthService {
 
     pub async fn revalidate(pool: &PgPool, token: uuid::Uuid) -> Result<Token, Error> {
         let result = sqlx::query!(
-            r#"SELECT role, user_id, refresh_token, refresh_token_expires FROM app.revalidate($1)"#,
+            r#"SELECT role, user_id, refresh_token, refresh_token_expires FROM app.validate_refresh_token($1)"#,
             token
         )
         .fetch_one(pool)

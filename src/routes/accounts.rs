@@ -111,7 +111,6 @@ async fn revalidate(
     Extension(pool): Extension<PgPool>,
     Json(body): Json<RevalidatePayload>,
 ) -> Result<Json<AuthBody>, Error> {
-    println!("{body:#?}!!!");
     let (role, user_id, refresh_token, refresh_token_expires) =
         AuthService::revalidate(&pool, body.refresh_token).await?;
 

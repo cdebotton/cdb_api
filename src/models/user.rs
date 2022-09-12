@@ -6,13 +6,7 @@ use serde::Serialize;
 use sqlx::{FromRow, PgPool};
 use uuid::Uuid;
 
-#[derive(thiserror::Error, Debug)]
-enum UserError {
-    #[error("Not Found")]
-    NotFound,
-    #[error("Server error {0:#?}")]
-    SqlxError(#[from] sqlx::Error),
-}
+use crate::error::Error;
 
 #[derive(FromRow, Default, Debug, Clone, Serialize)]
 pub struct User {
@@ -26,14 +20,14 @@ pub struct User {
 }
 
 impl User {
-    pub async fn find_by_id(pool: &PgPool, id: Uuid) -> Result<Self, UserError> {
+    pub async fn find_by_id(pool: &PgPool, id: Uuid) -> Result<Self, Error> {
         sqlx::query_as!(User, r#"select * from app.users where id = $1"#, id)
             .fetch_optional(pool)
             .await?
-            .ok_or(UserError::NotFound)
+            .ok_or(Error::NotFound)
     }
 
-    pub async fn find_all(pool: &PgPool) -> Result<Vec<Self>, sqlx::Error> {
+    pub async fn find_all(pool: &PgPool) -> Result<Vec<Self>, Error> {
         Ok(sqlx::query_as!(User, r#"SELECT * FROM app.users"#)
             .fetch_all(pool)
             .await?)

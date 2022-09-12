@@ -22,6 +22,8 @@ pub enum Error {
     TokenCreation,
     #[error("Invalid token")]
     InvalidToken,
+    #[error("Not found")]
+    NotFound,
 }
 
 impl Error {
@@ -29,6 +31,7 @@ impl Error {
         match self {
             Self::DbError(_) | Self::TokenCreation => StatusCode::INTERNAL_SERVER_ERROR,
             Self::WrongCredentials => StatusCode::UNAUTHORIZED,
+            Self::NotFound => StatusCode::NOT_FOUND,
             Self::MissingCredentials
             | Self::InvalidToken
             | Self::InvalidRefreshToken
