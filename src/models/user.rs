@@ -9,6 +9,7 @@ use uuid::Uuid;
 use crate::error::Error;
 
 #[derive(FromRow, Default, Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct User {
     pub id: Uuid,
     pub first_name: Option<String>,

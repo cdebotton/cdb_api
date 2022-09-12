@@ -7,7 +7,7 @@ use crate::{error::Error, models::user::User};
 pub fn routes() -> Router {
     Router::new()
         .route("/", get(get_users))
-        .route("/:user_id", get(get_user))
+        .route("/:id", get(get_user))
 }
 
 async fn get_users(Extension(pool): Extension<PgPool>) -> Result<Json<Vec<User>>, Error> {
