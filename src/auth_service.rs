@@ -19,45 +19,47 @@ impl AuthService {
     ) -> Result<Token, Error> {
         let call = sqlx::query!(
             // language=PostgreSQL
-            r#"SELECT role, user_id, refresh_token, refresh_token_expires FROM app.authenticate($1, $2)"#,
+            r#"SELECT
+                    role "role!",
+                    user_id "user_id!",
+                    refresh_token "refresh_token!",
+                    refresh_token_expires "refresh_token_expires!"
+                FROM app.authenticate($1, $2)"#,
             &email,
             &password
         )
         .fetch_one(pool)
-        .await?;
+        .await
+        .map_err(|_| Error::WrongCredentials)?;
 
-        match (
+        Ok((
             call.role,
             call.user_id,
             call.refresh_token,
             call.refresh_token_expires,
-        ) {
-            (Some(role), Some(user_id), Some(refresh_token), Some(refresh_token_expires)) => {
-                Ok((role, user_id, refresh_token, refresh_token_expires))
-            }
-            _ => Err(Error::WrongCredentials),
-        }
+        ))
     }
 
     pub async fn revalidate(pool: &PgPool, token: uuid::Uuid) -> Result<Token, Error> {
-        let result = sqlx::query!(
-            r#"SELECT role, user_id, refresh_token, refresh_token_expires FROM app.validate_refresh_token($1)"#,
+        let row = sqlx::query!(
+            r#"SELECT
+                role "role!",
+                user_id "user_id!",
+                refresh_token "refresh_token!",
+                refresh_token_expires "refresh_token_expires!"
+            FROM app.validate_refresh_token($1)"#,
             token
         )
         .fetch_one(pool)
-        .await?;
+        .await
+        .map_err(|_| Error::WrongCredentials)?;
 
-        match (
-            result.role,
-            result.user_id,
-            result.refresh_token,
-            result.refresh_token_expires,
-        ) {
-            (Some(role), Some(user_id), Some(refresh_token), Some(refresh_token_expires)) => {
-                Ok((role, user_id, refresh_token, refresh_token_expires))
-            }
-            _ => Err(Error::WrongCredentials),
-        }
+        Ok((
+            row.role,
+            row.user_id,
+            row.refresh_token,
+            row.refresh_token_expires,
+        ))
     }
 
     pub async fn register(
