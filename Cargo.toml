@@ -15,6 +15,8 @@ validator = { version = "0.16.0", features = ["derive"] }
 uuid = { version = "1.1.2", features = ["serde"] }
 tower-http = { version = "0.3.4", features = ["cors"] }
 chrono = { version = "0.4.22", features = ["serde"] }
+utoipa = { version = "2.1.0", features = ["axum_extras"] }
+utoipa-swagger-ui = { version = "2.0.1", features = ["axum"] }
 tracing = "0.1.36"
 thiserror = "1.0.32"
 jsonwebtoken = "8.1.1"
