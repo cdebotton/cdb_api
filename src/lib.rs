@@ -1,13 +1,12 @@
 use std::env;
 
-pub use auth_service::AuthService;
 use jwt::Keys;
 use once_cell::sync::Lazy;
 
-mod auth_service;
 mod error;
 pub mod jwt;
 mod models;
+pub mod opts;
 pub mod routes;
 pub mod utils;
 

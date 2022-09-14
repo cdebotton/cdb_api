@@ -8,7 +8,8 @@
 use std::{env, net::SocketAddr, process::exit};
 
 use axum::Server;
-use cdb_api::routes;
+use cdb_api::{opts::Opts, routes};
+use clap::Parser;
 use sqlx::postgres::PgPoolOptions;
 use tower::ServiceBuilder;
 use tower_http::cors::CorsLayer;
@@ -23,7 +24,9 @@ async fn main() {
         .with(tracing_subscriber::fmt::layer())
         .init();
 
-    let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
+    let opts = Opts::parse();
+
+    let addr = SocketAddr::from(([127, 0, 0, 1], opts.port));
     let database_url = match dotenvy::var("DATABASE_URL") {
         Ok(str) => str,
         Err(err) => {

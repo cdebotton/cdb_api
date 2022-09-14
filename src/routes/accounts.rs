@@ -6,7 +6,7 @@ use sqlx::PgPool;
 use uuid::Uuid;
 use validator::Validate;
 
-use crate::{error::Error, jwt::Claims, models::user::User, AuthService, KEYS};
+use crate::{error::Error, jwt::Claims, models::user::User, KEYS};
 
 pub fn routes() -> Router {
     Router::new()
@@ -57,10 +57,22 @@ async fn authorize(
 ) -> Result<Json<AuthBody>, Error> {
     payload.validate().map_err(|_| Error::MissingCredentials)?;
 
-    let (role, user_id, refresh_token, refresh_token_expires) =
-        AuthService::authenticate(&pool, &payload.client_id, &payload.client_secret).await?;
+    let row = sqlx::query!(
+        // language=PostgreSQL
+        r#"SELECT
+                role "role!",
+                user_id "user_id!",
+                refresh_token "refresh_token!",
+                refresh_token_expires "refresh_token_expires!"
+            FROM app.authenticate($1, $2)"#,
+        &payload.client_id,
+        &payload.client_secret
+    )
+    .fetch_one(&pool)
+    .await
+    .map_err(|_| Error::WrongCredentials)?;
 
-    let claims = Claims::new(user_id, role.into());
+    let claims = Claims::new(row.user_id, row.role.into());
 
     let header = Header::new(Algorithm::HS512);
     let token = encode(&header, &claims, &KEYS.encoding).map_err(|_| Error::TokenCreation)?;
@@ -68,8 +80,8 @@ async fn authorize(
     Ok(Json(AuthBody::new(
         token,
         claims.exp,
-        refresh_token,
-        refresh_token_expires,
+        row.refresh_token,
+        row.refresh_token_expires,
     )))
 }
 
@@ -89,17 +101,19 @@ pub struct RegisterPayload {
 
 async fn register(
     Extension(pool): Extension<PgPool>,
-    Json(request): Json<RegisterPayload>,
+    Json(payload): Json<RegisterPayload>,
 ) -> Result<Json<User>, Error> {
-    request.validate()?;
+    payload.validate()?;
 
-    let user = AuthService::register(
-        &pool,
-        request.first_name,
-        request.last_name,
-        request.email,
-        request.password,
+    let user = sqlx::query_as::<_, User>(
+        // language=PostgresQL
+        r#"SELECT * FROM app.register_user($1, $2, $3, $4);"#,
     )
+    .bind(payload.first_name)
+    .bind(payload.last_name)
+    .bind(payload.email)
+    .bind(payload.password)
+    .fetch_one(&pool)
     .await?;
 
     Ok(Json(user))
@@ -113,12 +127,23 @@ struct RevalidatePayload {
 
 async fn revalidate(
     Extension(pool): Extension<PgPool>,
-    Json(body): Json<RevalidatePayload>,
+    Json(payload): Json<RevalidatePayload>,
 ) -> Result<Json<AuthBody>, Error> {
-    let (role, user_id, refresh_token, refresh_token_expires) =
-        AuthService::revalidate(&pool, body.refresh_token).await?;
+    let row = sqlx::query!(
+        // language=PostgresQL
+        r#"SELECT
+            role "role!",
+            user_id "user_id!",
+            refresh_token "refresh_token!",
+            refresh_token_expires "refresh_token_expires!"
+        FROM app.validate_refresh_token($1)"#,
+        payload.refresh_token
+    )
+    .fetch_one(&pool)
+    .await
+    .map_err(|_| Error::WrongCredentials)?;
 
-    let claims = Claims::new(user_id, role.into());
+    let claims = Claims::new(row.user_id, row.role.into());
 
     let header = Header::new(Algorithm::HS512);
     let token = encode(&header, &claims, &KEYS.encoding).map_err(|_| Error::TokenCreation)?;
@@ -126,7 +151,7 @@ async fn revalidate(
     Ok(Json(AuthBody::new(
         token,
         claims.exp,
-        refresh_token,
-        refresh_token_expires,
+        row.refresh_token,
+        row.refresh_token_expires,
     )))
 }
