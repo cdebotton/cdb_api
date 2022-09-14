@@ -42,6 +42,7 @@ impl AuthService {
 
     pub async fn revalidate(pool: &PgPool, token: uuid::Uuid) -> Result<Token, Error> {
         let row = sqlx::query!(
+            // language=PostgresQL
             r#"SELECT
                 role "role!",
                 user_id "user_id!",

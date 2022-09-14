@@ -64,6 +64,7 @@ async fn test_revalidate(pool: PgPool) -> Result<()> {
     let mut app = app(pool.clone());
 
     let token = sqlx::query!(
+        // language=PostgresQL
         r#"SELECT refresh_token FROM app_private.accounts WHERE email = 'not.the.clams@gmail.com';"#
     )
     .fetch_one(&pool)
