@@ -15,14 +15,14 @@ async fn test_authorize(pool: PgPool) -> Result<()> {
     let mut app = app(pool);
 
     let request = Request::post("/accounts/authorize").json(json! {{
-        "client_id": "sleepy.g@yahoo.com",
-        "client_secret": "test"
+        "clientId": "sleepy.g@yahoo.com",
+        "clientSecret": "test"
     }});
 
     let mut res = app.borrow_mut().oneshot(request).await?;
     let json = response_json(&mut res).await;
 
-    assert_eq!(json["token_type"], "Bearer".to_string());
+    assert_eq!(json["tokenType"], "Bearer".to_string());
 
     Ok(())
 }
@@ -32,8 +32,8 @@ async fn test_register(pool: PgPool) -> Result<()> {
     let mut app = app(pool);
 
     let request = Request::post("/accounts/register").json(json! {{
-        "first_name": "Sleepy",
-        "last_name": "Gary",
+        "firstName": "Sleepy",
+        "lastName": "Gary",
         "email": "sleepy.g@yahoo.com",
         "password": "thisIsMyPassword"
     }});
@@ -41,8 +41,20 @@ async fn test_register(pool: PgPool) -> Result<()> {
     let mut res = app.borrow_mut().oneshot(request).await?;
     let json = response_json(&mut res).await;
 
-    assert_eq!(json["first_name"], "Sleepy".to_string());
-    assert_eq!(json["last_name"], "Gary".to_string());
+    json.get("createdAt").expect("Expecting created timestamp");
+
+    assert_eq!(
+        json.get("updatedAt").expect("Expecting updated timestamp"),
+        &serde_json::json!(null)
+    );
+
+    json.get("id").expect("Expecting ID");
+
+    assert_eq!(
+        json.get("firstName").expect("Expecting first name"),
+        "Sleepy"
+    );
+    assert_eq!(json.get("lastName").expect("Expecting last name"), "Gary");
 
     Ok(())
 }
@@ -59,9 +71,21 @@ async fn test_revalidate(pool: PgPool) -> Result<()> {
 
     let token = token.refresh_token.unwrap();
 
-    let request = Request::post("/accounts/revalidate").json(json! {token.to_string()});
+    let request =
+        Request::post("/accounts/revalidate").json(json! {{ "refreshToken": token.to_string() }});
     let mut response = app.borrow_mut().oneshot(request).await?;
     let json = response_json(&mut response).await;
+
+    json.get("accessToken").expect("Expecting access token");
+    json.get("expiresIn")
+        .expect("Expecting expiration timestamp");
+    json.get("refreshToken")
+        .expect("Expecting expiration timestamp for refresh token");
+
+    assert_eq!(
+        json.get("tokenType").expect("Expecting token type"),
+        "Bearer"
+    );
 
     Ok(())
 }

@@ -16,6 +16,7 @@ pub fn routes() -> Router {
 }
 
 #[derive(Debug, Deserialize, Validate)]
+#[serde(rename_all = "camelCase")]
 pub struct AuthPayload {
     #[validate(email, length(min = 1))]
     pub client_id: String,
@@ -24,6 +25,7 @@ pub struct AuthPayload {
 }
 
 #[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct AuthBody {
     pub token_type: String,
     pub access_token: String,
@@ -75,6 +77,7 @@ async fn authorize(
 struct RegisterBody;
 
 #[derive(Debug, Deserialize, Validate)]
+#[serde(rename_all = "camelCase")]
 pub struct RegisterPayload {
     pub first_name: Option<String>,
     pub last_name: Option<String>,
@@ -103,6 +106,7 @@ async fn register(
 }
 
 #[derive(Debug, Deserialize, Validate)]
+#[serde(rename_all = "camelCase")]
 struct RevalidatePayload {
     refresh_token: uuid::Uuid,
 }

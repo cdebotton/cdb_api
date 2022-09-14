@@ -16,10 +16,33 @@ async fn get_users(pool: PgPool) -> Result<()> {
     let mut res = app.borrow_mut().oneshot(req).await?;
     let json = response_json(&mut res).await;
 
-    assert_eq!(json[0]["first_name"], "Sleepy");
-    assert_eq!(json[0]["last_name"], "Gary");
-    assert_eq!(json[1]["first_name"], "Kiko");
-    assert_eq!(json[1]["last_name"], "Bato-de Botton");
+    let first_user = json.get(0).expect("Expecting a first user");
+    let second_user = json.get(1).expect("Expecting a second user");
+
+    assert_eq!(
+        first_user
+            .get("firstName")
+            .expect("Expecting the first user to have a first name"),
+        "Sleepy"
+    );
+    assert_eq!(
+        first_user
+            .get("lastName")
+            .expect("Expecting the first user to have a last name"),
+        "Gary"
+    );
+    assert_eq!(
+        second_user
+            .get("firstName")
+            .expect("Expecting the second user to have a first name"),
+        "Kiko"
+    );
+    assert_eq!(
+        second_user
+            .get("lastName")
+            .expect("Expecting the second user to have a last name"),
+        "Bato-de Botton"
+    );
 
     Ok(())
 }
