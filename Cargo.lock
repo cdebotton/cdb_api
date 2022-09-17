@@ -185,6 +185,7 @@ dependencies = [
  "clap",
  "dotenvy",
  "eyre",
+ "hyper",
  "jsonwebtoken",
  "mockall",
  "once_cell",

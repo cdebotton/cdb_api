@@ -14,7 +14,7 @@ use jsonwebtoken::{decode, DecodingKey, EncodingKey, Validation};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::{error::Error, KEYS};
+use crate::{http::error::Error, KEYS};
 
 pub struct Keys {
     pub encoding: EncodingKey,

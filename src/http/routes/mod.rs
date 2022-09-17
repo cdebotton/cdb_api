@@ -3,6 +3,8 @@ mod users;
 
 use axum::{http::StatusCode, response::IntoResponse, routing::get, Extension, Json, Router};
 use sqlx::PgPool;
+use users::{UserResponse, UsersResponse};
+use utoipa::OpenApi;
 
 pub fn app(pool: PgPool) -> Router {
     Router::new()
@@ -13,8 +15,15 @@ pub fn app(pool: PgPool) -> Router {
         .layer(Extension(pool))
 }
 
-async fn root() -> Json<&'static str> {
-    Json("OK!")
+#[derive(OpenApi)]
+#[openapi(
+    paths(users::get_users, users::get_user),
+    components(schemas(UsersResponse, UserResponse))
+)]
+struct ApiDoc;
+
+async fn root() -> Json<String> {
+    Json(ApiDoc::openapi().to_json().unwrap())
 }
 
 async fn not_found() -> impl IntoResponse {

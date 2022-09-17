@@ -1,7 +1,7 @@
 use std::borrow::BorrowMut;
 
 use axum::http::{Request, StatusCode};
-use cdb_api::{routes::app, utils::test::RequestBuilderExt};
+use cdb_api::{http::routes::app, test_utils::*};
 use eyre::Result;
 use sqlx::PgPool;
 use tower::ServiceExt;

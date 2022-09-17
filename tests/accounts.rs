@@ -1,9 +1,6 @@
 use axum::http::Request;
 
-use cdb_api::{
-    routes::app,
-    utils::test::{response_json, RequestBuilderExt},
-};
+use cdb_api::{http::routes::app, test_utils::*};
 use eyre::Result;
 use serde_json::json;
 use sqlx::PgPool;

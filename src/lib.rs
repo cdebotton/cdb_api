@@ -1,14 +1,11 @@
 use std::env;
 
-use jwt::Keys;
+use http::jwt::Keys;
 use once_cell::sync::Lazy;
 
-mod error;
-pub mod jwt;
-mod models;
-pub mod opts;
-pub mod routes;
-pub mod utils;
+pub mod config;
+pub mod http;
+pub mod test_utils;
 
 static KEYS: Lazy<Keys> = Lazy::new(|| {
     let secret = env::var("JWT_SECRET").unwrap_or_else(|_| panic!("JWT_SECRET not set"));

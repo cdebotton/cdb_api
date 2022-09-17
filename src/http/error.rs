@@ -24,12 +24,16 @@ pub enum Error {
     InvalidToken,
     #[error("Not found")]
     NotFound,
+    #[error("Internal server error")]
+    HyperError(#[from] hyper::Error),
 }
 
 impl Error {
     pub const fn status_code(&self) -> StatusCode {
         match self {
-            Self::DbError(_) | Self::TokenCreation => StatusCode::INTERNAL_SERVER_ERROR,
+            Self::HyperError(_) | Self::DbError(_) | Self::TokenCreation => {
+                StatusCode::INTERNAL_SERVER_ERROR
+            }
             Self::WrongCredentials => StatusCode::UNAUTHORIZED,
             Self::NotFound => StatusCode::NOT_FOUND,
             Self::MissingCredentials

@@ -1,10 +1,15 @@
 use axum::{routing::post, Extension, Json, Router};
+use chrono::{DateTime, Utc};
 use jsonwebtoken::{encode, Algorithm, Header};
 use serde::{Deserialize, Serialize};
-use sqlx::PgPool;
+use sqlx::{FromRow, PgPool};
+use uuid::Uuid;
 use validator::Validate;
 
-use crate::{error::Error, jwt::Claims, models::user::User, KEYS};
+use crate::{
+    http::{error::Error, jwt::Claims},
+    KEYS,
+};
 
 pub fn routes() -> Router {
     Router::new()
@@ -68,9 +73,6 @@ async fn authorize(
     }))
 }
 
-#[derive(Debug, Deserialize)]
-struct RegisterBody;
-
 #[derive(Debug, Deserialize, Validate)]
 #[serde(rename_all = "camelCase")]
 pub struct RegisterPayload {
@@ -82,15 +84,28 @@ pub struct RegisterPayload {
     pub password: String,
 }
 
+#[derive(FromRow, Serialize, Debug, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct RegisterResponse {
+    pub id: Uuid,
+    pub first_name: String,
+    pub last_name: String,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: Option<DateTime<Utc>>,
+}
+
 async fn register(
     Extension(pool): Extension<PgPool>,
     Json(payload): Json<RegisterPayload>,
-) -> Result<Json<User>, Error> {
+) -> Result<Json<RegisterResponse>, Error> {
     payload.validate()?;
 
-    let user = sqlx::query_as::<_, User>(
+    let register_response = sqlx::query_as::<_, RegisterResponse>(
         // language=PostgresQL
-        r#"SELECT * FROM app.register_user($1, $2, $3, $4);"#,
+        r#"
+            SELECT id, first_name, last_name, created_at, updated_at
+            FROM app.register_user($1, $2, $3, $4);
+        "#,
     )
     .bind(payload.first_name)
     .bind(payload.last_name)
@@ -99,7 +114,7 @@ async fn register(
     .fetch_one(&pool)
     .await?;
 
-    Ok(Json(user))
+    Ok(Json(register_response))
 }
 
 #[derive(Debug, Deserialize, Validate)]
