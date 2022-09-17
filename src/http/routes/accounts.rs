@@ -147,6 +147,8 @@ async fn revalidate(
     let access_token =
         encode(&header, &claims, &KEYS.encoding).map_err(|_| Error::TokenCreation)?;
 
+    tracing::info!("Revalidated token for user {}", row.user_id);
+
     Ok(Json(AuthBody {
         token_type: "Bearer",
         access_token,

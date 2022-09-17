@@ -3,7 +3,7 @@ mod users;
 
 use axum::{http::StatusCode, response::IntoResponse, routing::get, Extension, Json, Router};
 use sqlx::PgPool;
-use users::{UserResponse, UsersResponse};
+use users::{Account, UserResponse, UsersResponse};
 use utoipa::OpenApi;
 
 pub fn app(pool: PgPool) -> Router {
@@ -18,7 +18,7 @@ pub fn app(pool: PgPool) -> Router {
 #[derive(OpenApi)]
 #[openapi(
     paths(users::get_users, users::get_user),
-    components(schemas(UsersResponse, UserResponse))
+    components(schemas(UsersResponse, UserResponse, Account))
 )]
 struct ApiDoc;
 
