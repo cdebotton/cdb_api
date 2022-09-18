@@ -14,12 +14,3 @@ services:
     restart: always
     ports:
       - "8080:8080"
-  # web:
-  #   restart: on-failure
-  #   depends_on:
-  #     - db
-  #   build: .
-  #   environment:
-  #     DATABASE_URL: "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}/${POSTGRES_DB}"
-  #   ports:
-  #     - "3000:3000"
