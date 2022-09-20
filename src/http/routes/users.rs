@@ -19,14 +19,18 @@ pub fn routes() -> Router {
 #[derive(Serialize, Debug, Clone, Default, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct Account {
+    #[schema(example = "major.tom@gmail.com")]
     pub email: String,
 }
 
 #[derive(Default, Debug, Clone, Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct UsersResponse {
+    #[schema(example = "Uuid::default()")]
     pub id: Uuid,
+    #[schema(example = "David")]
     pub first_name: Option<String>,
+    #[schema(example = "Bowie")]
     pub last_name: Option<String>,
     #[serde(with = "ts_milliseconds")]
     pub created_at: DateTime<Utc>,
@@ -55,7 +59,7 @@ impl<'r> FromRow<'r, PgRow> for UsersResponse {
 }
 
 #[utoipa::path(get, path = "/users", responses(
-    (status = 200, description = "List all users", body = Vec<UsersResponse>)
+    (status = 200, description = "List all users", body = [UsersResponse])
 ))]
 pub async fn get_users(
     Extension(pool): Extension<PgPool>,
@@ -102,10 +106,17 @@ impl<'r> FromRow<'r, PgRow> for UserResponse {
     }
 }
 
-#[utoipa::path(get, path = "/users/{id}", responses(
-    (status = 200, description = "Get a user", body = UserResponse),
-    (status = 404, description = "User not found")
-))]
+#[utoipa::path(
+    get,
+    path = "/users/{id}",
+    responses(
+        (status = 200, description = "Get a user", body = UserResponse),
+        (status = 404, description = "User not found")
+    ),
+    params(
+        ("id" = Uuid, Path, description = "The user's id")
+    )
+)]
 pub async fn get_user(
     Extension(pool): Extension<PgPool>,
     Path(id): Path<Uuid>,

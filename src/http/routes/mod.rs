@@ -1,7 +1,8 @@
 mod accounts;
 mod users;
 
-use axum::{http::StatusCode, response::IntoResponse, routing::get, Extension, Json, Router};
+use accounts::{AuthBody, AuthPayload, RevalidatePayload};
+use axum::{http::StatusCode, response::IntoResponse, routing::get, Extension, Router};
 use sqlx::PgPool;
 use users::{Account, UserResponse, UsersResponse};
 use utoipa::OpenApi;
@@ -17,13 +18,25 @@ pub fn app(pool: PgPool) -> Router {
 
 #[derive(OpenApi)]
 #[openapi(
-    paths(users::get_users, users::get_user),
-    components(schemas(UsersResponse, UserResponse, Account))
+    paths(
+        users::get_users,
+        users::get_user,
+        accounts::authorize,
+        accounts::revalidate
+    ),
+    components(schemas(
+        UsersResponse,
+        UserResponse,
+        Account,
+        AuthPayload,
+        AuthBody,
+        RevalidatePayload
+    ))
 )]
 struct ApiDoc;
 
-async fn root() -> Json<String> {
-    Json(ApiDoc::openapi().to_json().unwrap())
+async fn root() -> String {
+    ApiDoc::openapi().to_json().unwrap()
 }
 
 async fn not_found() -> impl IntoResponse {

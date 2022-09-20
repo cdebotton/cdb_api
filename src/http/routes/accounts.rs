@@ -3,6 +3,7 @@ use chrono::{DateTime, Utc};
 use jsonwebtoken::{encode, Algorithm, Header};
 use serde::{Deserialize, Serialize};
 use sqlx::{FromRow, PgPool};
+use utoipa::ToSchema;
 use uuid::Uuid;
 use validator::Validate;
 
@@ -18,7 +19,7 @@ pub fn routes() -> Router {
         .route("/revalidate", post(revalidate))
 }
 
-#[derive(Debug, Deserialize, Validate)]
+#[derive(Debug, Deserialize, Validate, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct AuthPayload {
     #[validate(email, length(min = 1))]
@@ -27,7 +28,7 @@ pub struct AuthPayload {
     pub client_secret: String,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct AuthBody {
     pub token_type: &'static str,
@@ -37,7 +38,17 @@ pub struct AuthBody {
     pub refresh_token_expires: i64,
 }
 
-async fn authorize(
+#[utoipa::path(
+    post,
+    path = "/accounts/authorize",
+    request_body = AuthPayload,
+    responses(
+        (status = 200, description = "Authorization successful", body = AuthBody),
+        (status = 404, description = "Invalid credentials")
+    ),
+
+)]
+pub async fn authorize(
     Extension(pool): Extension<PgPool>,
     Json(payload): Json<AuthPayload>,
 ) -> Result<Json<AuthBody>, Error> {
@@ -117,13 +128,22 @@ async fn register(
     Ok(Json(register_response))
 }
 
-#[derive(Debug, Deserialize, Validate)]
+#[derive(Debug, Deserialize, Validate, ToSchema)]
 #[serde(rename_all = "camelCase")]
-struct RevalidatePayload {
+pub struct RevalidatePayload {
     refresh_token: uuid::Uuid,
 }
 
-async fn revalidate(
+#[utoipa::path(
+    post,
+    path = "/accounts/revalidate",
+    request_body = RevalidatePayload,
+    responses(
+        (status = 200, description = "Revalidation successful", body = AuthBody),
+        (status = 401, description = "Invalid refresh token")
+    )
+)]
+pub async fn revalidate(
     Extension(pool): Extension<PgPool>,
     Json(payload): Json<RevalidatePayload>,
 ) -> Result<Json<AuthBody>, Error> {
