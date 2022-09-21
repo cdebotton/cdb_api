@@ -16,7 +16,7 @@ use sqlx::postgres::PgPoolOptions;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 
 #[tokio::main]
-async fn main() -> Result<(), Error> {
+async fn main() {
     tracing_subscriber::registry()
         .with(EnvFilter::new(
             env::var("RUST_LOG").unwrap_or_else(|_| "cdb_api=debug".into()),
@@ -25,35 +25,39 @@ async fn main() -> Result<(), Error> {
         .init();
 
     std::panic::set_hook(Box::new(|panic| {
-        if let Some(location) = panic.location() {
-            tracing::error!(
-                message = %panic,
-                panic.file = location.file(),
-                panic.line = location.line(),
-                panic.column = location.column()
-            );
-        } else {
-            tracing::error!(message = %panic);
-        }
+        panic.location().map_or_else(
+            || {
+                tracing::error!(message = %panic);
+            },
+            |location| {
+                tracing::error!(
+                    message = %panic,
+                    panic.file = location.file(),
+                    panic.line = location.line(),
+                    panic.column = location.column()
+                );
+            },
+        );
     }));
 
+    let config = Config::parse();
+
     let database_url = dotenvy::var("DATABASE_URL")
-        .expect("Failed to read DATABASE_URL from env with error {0:#?}");
+        .ok()
+        .unwrap_or_else(|| panic!("Unable to read env DATABASE_URL"));
 
     let pool = PgPoolOptions::new()
         .max_connections(5)
         .connect(&database_url)
         .await
-        .expect("Unable to connect to database with error {0:#?}");
+        .ok()
+        .unwrap_or_else(|| panic!("Unable to connect to the database"));
 
-    sqlx::migrate!()
-        .run(&pool)
-        .await
-        .expect("Unable to run migrations, cannot start application");
+    if let Err(err) = sqlx::migrate!().run(&pool).await {
+        tracing::error!("Unable to run database migrations: {}", err);
+    }
 
-    let config = Config::parse();
-
-    http::serve(pool, config).await?;
-
-    Ok(())
+    if let Err(err) = http::serve(pool, config).await {
+        tracing::error!("Unable to start server: {}", err);
+    }
 }
