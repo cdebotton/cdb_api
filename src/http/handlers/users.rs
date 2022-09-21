@@ -1,4 +1,4 @@
-use axum::{extract::Path, routing::get, Extension, Json, Router};
+use axum::{extract::Path, Extension, Json};
 use chrono::{
     serde::{ts_milliseconds, ts_milliseconds_option},
     DateTime, Utc,
@@ -9,12 +9,6 @@ use utoipa::ToSchema;
 use uuid::Uuid;
 
 use crate::http::error::Error;
-
-pub fn routes() -> Router {
-    Router::new()
-        .route("/", get(get_users))
-        .route("/:id", get(get_user))
-}
 
 #[derive(Serialize, Debug, Clone, Default, ToSchema)]
 #[serde(rename_all = "camelCase")]
@@ -61,7 +55,7 @@ impl<'r> FromRow<'r, PgRow> for UsersResponse {
 #[utoipa::path(get, path = "/users", responses(
     (status = 200, description = "List all users", body = [UsersResponse])
 ))]
-pub async fn get_users(
+pub async fn find_users(
     Extension(pool): Extension<PgPool>,
 ) -> Result<Json<Vec<UsersResponse>>, Error> {
     let users = sqlx::query_as::<_, UsersResponse>(
@@ -117,7 +111,7 @@ impl<'r> FromRow<'r, PgRow> for UserResponse {
         ("id" = Uuid, Path, description = "The user's id")
     )
 )]
-pub async fn get_user(
+pub async fn find_user_by_id(
     Extension(pool): Extension<PgPool>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<UserResponse>, Error> {

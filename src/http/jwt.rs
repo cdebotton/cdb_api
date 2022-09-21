@@ -1,7 +1,4 @@
-use std::{
-    fmt::{self, Display},
-    ops::Add,
-};
+use std::{fmt, ops::Add};
 
 use axum::{
     async_trait,
@@ -16,6 +13,7 @@ use uuid::Uuid;
 
 use crate::{http::error::Error, KEYS};
 
+/// Keys used for encoding and decoding tokens
 pub struct Keys {
     pub encoding: EncodingKey,
     pub decoding: DecodingKey,
@@ -60,6 +58,10 @@ impl From<String> for Role {
     }
 }
 
+/// The claims object declares the parameters of the users session.
+/// Sub: The subscribers id
+/// Role: Their priviliges
+/// Exp: The expiration date of the session token
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
     pub sub: Uuid,
@@ -75,6 +77,7 @@ impl Claims {
     }
 }
 
+/// Middleware to extract the claims object into a handler
 #[async_trait]
 impl<B> FromRequest<B> for Claims
 where
@@ -95,15 +98,5 @@ where
             .map_err(|_| Error::InvalidToken)?;
 
         Ok(token_data.claims)
-    }
-}
-
-impl Display for Claims {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "sub: {}\nrole: {}\nexp:{}",
-            self.sub, self.role, self.exp
-        )
     }
 }

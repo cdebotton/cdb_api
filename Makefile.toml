@@ -1,0 +1,21 @@
+[tasks.clean]
+command = "cargo"
+args = ["clean"]
+
+[tasks.docker]
+command = "docker-compose"
+args = ["up", "-d"]
+
+[tasks.watch-build]
+command = "cargo"
+args = ["watch", "--", "cargo", "run"]
+dependencies = ["docker"]
+
+
+[tasks.watch-test]
+command = "cargo"
+args = ["watch", "--", "cargo", "nextest", "run"]
+dependencies = ["docker"]
+
+[tasks.watch]
+run_task = { name = ["watch-build", "watch-test"], parallel = true }

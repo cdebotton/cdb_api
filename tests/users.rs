@@ -1,14 +1,14 @@
 use std::borrow::BorrowMut;
 
 use axum::http::Request;
-use cdb_api::{http::routes::app, test_utils::*};
+use cdb_api::{http::routes, test_utils::*};
 use eyre::Result;
 use sqlx::PgPool;
 use tower::ServiceExt;
 
 #[sqlx::test(fixtures("users"))]
 async fn get_users(pool: PgPool) -> Result<()> {
-    let mut app = app(pool);
+    let mut app = routes(pool);
     let req = Request::get("/users").empty_body();
     let mut res = app.borrow_mut().oneshot(req).await?;
     let json = response_json(&mut res).await;

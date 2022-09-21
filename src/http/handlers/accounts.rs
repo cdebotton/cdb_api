@@ -1,4 +1,4 @@
-use axum::{routing::post, Extension, Json, Router};
+use axum::{Extension, Json};
 use chrono::{DateTime, Utc};
 use jsonwebtoken::{encode, Algorithm, Header};
 use serde::{Deserialize, Serialize};
@@ -7,23 +7,17 @@ use utoipa::ToSchema;
 use uuid::Uuid;
 use validator::Validate;
 
-use crate::{
-    http::{error::Error, jwt::Claims},
-    KEYS,
-};
+use crate::{http::jwt::Claims, Error, KEYS};
 
-pub fn routes() -> Router {
-    Router::new()
-        .route("/authorize", post(authorize))
-        .route("/register", post(register))
-        .route("/revalidate", post(revalidate))
-}
+mod authorize {}
 
 #[derive(Debug, Deserialize, Validate, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct AuthPayload {
+    #[schema(example = "david.bowie@gmail.com")]
     #[validate(email, length(min = 1))]
     pub client_id: String,
+    #[schema(example = "Z1gGy.Pl4y3d!GuI74R")]
     #[validate(length(min = 1))]
     pub client_secret: String,
 }
@@ -44,7 +38,7 @@ pub struct AuthBody {
     request_body = AuthPayload,
     responses(
         (status = 200, description = "Authorization successful", body = AuthBody),
-        (status = 404, description = "Invalid credentials")
+        (status = 401, description = "Invalid credentials", body = Error)
     ),
 
 )]
@@ -105,7 +99,7 @@ pub struct RegisterResponse {
     pub updated_at: Option<DateTime<Utc>>,
 }
 
-async fn register(
+pub async fn register(
     Extension(pool): Extension<PgPool>,
     Json(payload): Json<RegisterPayload>,
 ) -> Result<Json<RegisterResponse>, Error> {

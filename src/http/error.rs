@@ -4,9 +4,10 @@ use axum::{
     Json,
 };
 use serde_json::json;
+use utoipa::ToSchema;
 use validator::ValidationErrors;
 
-#[derive(thiserror::Error, Debug)]
+#[derive(thiserror::Error, Debug, ToSchema)]
 pub enum Error {
     #[error("{0}")]
     ValidationError(#[from] ValidationErrors),
@@ -26,14 +27,17 @@ pub enum Error {
     NotFound,
     #[error("Internal server error")]
     HyperError(#[from] hyper::Error),
+    #[error("Malformed data error: {0}")]
+    MalformedData(#[from] serde_json::Error),
 }
 
 impl Error {
     pub const fn status_code(&self) -> StatusCode {
         match self {
-            Self::HyperError(_) | Self::DbError(_) | Self::TokenCreation => {
-                StatusCode::INTERNAL_SERVER_ERROR
-            }
+            Self::HyperError(_)
+            | Self::DbError(_)
+            | Self::TokenCreation
+            | Self::MalformedData(_) => StatusCode::INTERNAL_SERVER_ERROR,
             Self::WrongCredentials => StatusCode::UNAUTHORIZED,
             Self::NotFound => StatusCode::NOT_FOUND,
             Self::MissingCredentials

@@ -1,6 +1,6 @@
 use axum::http::Request;
 
-use cdb_api::{http::routes::app, test_utils::*};
+use cdb_api::{http::routes, test_utils::*};
 use eyre::Result;
 use serde_json::json;
 use sqlx::PgPool;
@@ -9,7 +9,7 @@ use tower::ServiceExt;
 
 #[sqlx::test(fixtures("users"))]
 async fn test_authorize(pool: PgPool) -> Result<()> {
-    let mut app = app(pool);
+    let mut app = routes(pool);
 
     let request = Request::post("/accounts/authorize").json(json! {{
         "clientId": "sleepy.g@yahoo.com",
@@ -26,7 +26,7 @@ async fn test_authorize(pool: PgPool) -> Result<()> {
 
 #[sqlx::test]
 async fn test_register(pool: PgPool) -> Result<()> {
-    let mut app = app(pool);
+    let mut app = routes(pool);
 
     let request = Request::post("/accounts/register").json(json! {{
         "firstName": "Sleepy",
@@ -58,7 +58,7 @@ async fn test_register(pool: PgPool) -> Result<()> {
 
 #[sqlx::test(fixtures("revalidate"))]
 async fn test_revalidate(pool: PgPool) -> Result<()> {
-    let mut app = app(pool.clone());
+    let mut app = routes(pool.clone());
 
     let token = sqlx::query!(
         // language=PostgresQL
