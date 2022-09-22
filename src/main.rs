@@ -7,10 +7,7 @@
 
 use std::env;
 
-use cdb_api::{
-    config::Config,
-    http::{self, error::Error},
-};
+use cdb_api::{config::Config, http};
 use clap::Parser;
 use sqlx::postgres::PgPoolOptions;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};

@@ -10,5 +10,5 @@ args = ["watch", "--", "cargo", "run"]
 command = "cargo"
 args = ["watch", "--", "cargo", "nextest", "run"]
 
-[tasks.watch]
+[tasks.dev]
 run_task = { name = ["watch-build", "watch-test"], parallel = true }
