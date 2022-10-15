@@ -9,7 +9,7 @@ use std::net::SocketAddr;
 use tower::ServiceBuilder;
 use tower_http::cors::CorsLayer;
 
-use self::handlers::get_openapi;
+use self::handlers::{accounts, auth, get_openapi, users};
 
 pub mod error;
 pub mod handlers;
@@ -32,11 +32,11 @@ pub async fn serve(pool: PgPool, config: Config) -> Result<(), Error> {
 pub fn routes(pool: PgPool) -> Router {
     Router::new()
         .route("/", get(get_openapi))
-        .route("/users", get(handlers::users::find_users))
-        .route("/users/:id", get(handlers::users::find_user_by_id))
-        .route("/accounts/authorize", post(handlers::accounts::authorize))
-        .route("/accounts/register", post(handlers::accounts::register))
-        .route("/accounts/revalidate", post(handlers::accounts::revalidate))
+        .route("/users", get(users::find_users))
+        .route("/users/:id", get(users::find_user_by_id))
+        .route("/accounts/register", post(accounts::register))
+        .route("/auth/authorize", post(auth::authorize))
+        .route("/auth/revalidate", post(auth::revalidate))
         .fallback(get(handlers::not_found))
         .layer(Extension(pool))
 }

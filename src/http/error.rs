@@ -4,71 +4,55 @@ use axum::{
     Json,
 };
 use serde_json::json;
-use utoipa::ToSchema;
-use validator::ValidationErrors;
 
-#[derive(thiserror::Error, Debug, ToSchema)]
+#[derive(thiserror::Error, Debug, utoipa::ToSchema)]
 pub enum Error {
-    #[error("{0}")]
-    ValidationError(#[from] ValidationErrors),
-    #[error("There was a database error: {0}")]
-    DbError(#[from] sqlx::Error),
-    #[error("Wrong credentials")]
-    WrongCredentials,
-    #[error("Missing credentials")]
-    MissingCredentials,
-    #[error("Invalid refresh token")]
-    InvalidRefreshToken,
-    #[error("Unable to create token")]
-    TokenCreation,
-    #[error("Invalid token")]
-    InvalidToken,
     #[error("Not found")]
     NotFound,
-    #[error("Internal server error")]
-    HyperError(#[from] hyper::Error),
-    #[error("Malformed data error: {0}")]
-    MalformedData(#[from] serde_json::Error),
-}
-
-impl Error {
-    pub const fn status_code(&self) -> StatusCode {
-        match self {
-            Self::HyperError(_)
-            | Self::DbError(_)
-            | Self::TokenCreation
-            | Self::MalformedData(_) => StatusCode::INTERNAL_SERVER_ERROR,
-            Self::WrongCredentials => StatusCode::UNAUTHORIZED,
-            Self::NotFound => StatusCode::NOT_FOUND,
-            Self::MissingCredentials
-            | Self::InvalidToken
-            | Self::InvalidRefreshToken
-            | Self::ValidationError(_) => StatusCode::BAD_REQUEST,
-        }
-    }
+    #[error("Unable to start server")]
+    InternalError,
+    #[error("Invalid JWT")]
+    InvalidToken,
+    #[error("Validation error")]
+    ValidationError,
 }
 
 impl IntoResponse for Error {
     fn into_response(self) -> Response {
-        let error_message = self.to_string();
-        let body = Json(json!({ "error": error_message }));
+        use Error::*;
 
-        (self.status_code(), body).into_response()
+        let status_code = match self {
+            InternalError => StatusCode::INTERNAL_SERVER_ERROR,
+            NotFound => StatusCode::NOT_FOUND,
+            InvalidToken | ValidationError => StatusCode::BAD_REQUEST,
+        };
+
+        let body = Json(json!({ "error": self.to_string() }));
+
+        (status_code, body).into_response()
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use axum::{http::StatusCode, response::IntoResponse};
+impl From<validator::ValidationErrors> for Error {
+    fn from(_validation: validator::ValidationErrors) -> Self {
+        Error::ValidationError
+    }
+}
 
-    use super::Error;
+impl From<sqlx::Error> for Error {
+    fn from(_err: sqlx::Error) -> Self {
+        Error::InternalError
+    }
+}
 
-    #[test]
-    fn it_returns_status_code_with_response() {
-        let error = Error::WrongCredentials;
-        let resp = error.into_response();
+impl From<hyper::Error> for Error {
+    fn from(_err: hyper::Error) -> Self {
+        Error::InternalError
+    }
+}
 
-        let status_code = resp.status();
-        assert_eq!(status_code, StatusCode::UNAUTHORIZED);
+impl From<jsonwebtoken::errors::Error> for Error {
+    fn from(_err: jsonwebtoken::errors::Error) -> Self {
+        Error::InternalError
     }
 }

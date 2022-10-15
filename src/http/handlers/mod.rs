@@ -1,4 +1,5 @@
 pub mod accounts;
+pub mod auth;
 mod not_found;
 mod openapi;
 pub mod users;

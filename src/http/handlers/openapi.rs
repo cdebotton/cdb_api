@@ -1,4 +1,4 @@
-use super::{accounts, users};
+use super::{accounts, auth, users};
 use axum::Json;
 use utoipa::{openapi, OpenApi};
 
@@ -7,16 +7,19 @@ use utoipa::{openapi, OpenApi};
     paths(
         users::find_users,
         users::find_user_by_id,
-        accounts::authorize,
-        accounts::revalidate
+        accounts::register,
+        auth::authorize,
+        auth::revalidate
     ),
     components(schemas(
-        users::UsersResponse,
         users::UserResponse,
-        users::Account,
-        accounts::AuthPayload,
-        accounts::AuthBody,
-        accounts::RevalidatePayload,
+        users::UsersResponse,
+        auth::AuthBody,
+        auth::AuthResponse,
+        auth::RevalidateBody,
+        auth::RevalidateResponse,
+        accounts::RegisterBody,
+        accounts::RegisterResponse,
         crate::Error
     ))
 )]
